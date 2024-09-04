@@ -1,0 +1,15 @@
+import odps
+from odps import ODPS
+ 
+# 填入 AccessID、AccessKey、项目名称和Endpoint
+access_id = ''
+access_key = ''
+project = ''
+endpoint = ''
+ 
+# 创建ODPS实例
+odps = ODPS(access_id, access_key, project, endpoint)
+ 
+# 列出所有的表
+for table in odps.list_tables():
+    print(table.name)
