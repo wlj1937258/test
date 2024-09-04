@@ -1,0 +1,46 @@
+import pymysql
+sql_host=""
+sql_user=""
+sql_password=""
+# 连接数据库
+
+class Domysql:
+    def  __init__(self):
+        self.db = pymysql.connect(host=sql_host,
+                                port=3306,
+                                user=sql_user,
+                                password=sql_password,
+                                database='xp_user_intel',
+                                charset='utf8')
+        # 创建游标-可执行sql对象
+        self.cursor=self.db.cursor()
+        # # sql语句
+        # sql='select * from t_dmp_lc_perm_feat'
+        # # 执行sql语句
+        # row_num=cursor.execute(sql)
+        # print (row_num)
+
+    def send_sql(self,sql):
+        # Log.info(sql)
+        try:
+            # 执行SQL语句
+            self.cursor.execute(sql)
+            # 提交事务到数据库执行
+            self.db.commit()  # 事务是访问和更新数据库的一个程序执行单元
+            # 获取所有记录列表
+            results = self.cursor.fetchall()
+            # Log.info(results)
+            return results
+        except Exception as err:
+            # 如果发生错误则执行回滚操作
+            self.db.rollback()
+            return "报错", err
+    def close(self):
+    # 关闭数据库连接
+        self.db.close()    
+
+if __name__ == '__main__':
+    sql_conn_intel = Domysql()
+    # sql='select * from t_dmp_lc_perm_feat'
+    # print(sql_conn_intel.send_sql(sql))
+    sql_conn_intel.close()
