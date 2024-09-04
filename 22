@@ -1,0 +1,50 @@
+import csv
+import re
+import monitor as monitor
+# 假定你有一个名为log.csv的CSV文件，其中的内容是上述提供的文本。
+# 以下是处理这个CSV文件中的数据的代码。
+
+group_ids = []
+
+with open('D:/学习/python_test/selenium_test/else/巡检结果处理/巡检2.csv', newline='', encoding='utf-8') as csvfile:
+    # csvreader = csv.Reader(csvfile)这样不行，会报错
+    csvreader = csv.DictReader(csvfile)
+    # 循环遍历每一行 CSV
+    for row in csvreader:
+        # 假定groupId在每行中按以上提供的单引号标识的日志信息中。
+        # 使用正则表达式来寻找groupId
+        # print(row['message'])
+        search_result = re.search('groupId=(\\d+)', row['message'])
+        # print(search_result)
+        if search_result:
+            group_id = search_result.group(1)
+            group_ids.append(int(group_id))
+print('------------------------group_ids------------------------\n')
+print(group_ids) 
+new_group = list(set(group_ids))
+print('------------------------new_group(去重)------------------------\n')
+print(new_group)       
+
+group_ids2=[]
+with open('D:/学习/python_test/selenium_test/else/巡检结果处理/巡检结果.csv', newline='', encoding='utf-8') as csvfile:
+    # csvreader = csv.Reader(csvfile)这样不行，会报错
+    csvreader = csv.DictReader(csvfile)
+    # 循环遍历每一行 CSV
+    for row in csvreader:
+        # 假定groupId在每行中按以上提供的单引号标识的日志信息中。
+        # 使用正则表达式来寻找groupId
+        # print(row['message'])
+        search_result = re.search('groupId=(\\d+)', row['message'])
+        # print(search_result)
+        if search_result:
+            group_id = search_result.group(1)
+            group_ids2.append(int(group_id))
+print('------------------------group_ids2------------------------\n')
+print(group_ids2) 
+new_group2 = list(set(group_ids2))
+print('------------------------new_group2(去重)------------------------\n')
+print(new_group2)      
+
+new_group3=[x for x in new_group2 if x not in new_group]
+print('------------------------new_group3(相减)------------------------\n')
+print(new_group3)   
