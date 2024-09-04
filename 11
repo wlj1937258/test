@@ -1,0 +1,206 @@
+import pymysql
+import csv
+import pandas as pd 
+import openpyxl
+from openpyxl import Workbook
+from openpyxl.utils import range_boundaries
+extracted_data=[]
+
+
+# steps=[]
+# for step in steps:
+#     num=step['num']
+#     desc=step['desc']
+#     result=step['result']
+#     print("步骤"+str(num)+" "+desc+" 预期结果："+result+"\r")
+def to_steps_list(steps):
+    steps_after=[]
+    for step in steps:
+        num=step['num']
+        desc=step['desc']
+        result=step['result']
+        # print("步骤"+str(num)+" "+desc+" 预期结果："+result+"\r")
+        steps_after.append({'num':num,'desc':desc,'result':result})
+    return steps_after
+
+def to_steps_str(steps):
+    steps_after=''
+    result=''
+    for step in steps:
+        num=step['num']
+        desc=step['desc']
+        result=step['result']
+        # print("步骤"+str(num)+" "+desc+" 预期结果："+result+"\r")
+        steps_after=steps_after+"步骤"+str(num)+" "+desc+"\n"
+        result=result+"步骤"+str(num)+" 【预期结果】："+result+"\n"
+    # 去掉？。【】等特殊字符
+    steps_after=steps_after.replace('？','').replace('【','').replace('】','')
+    return steps_after
+
+
+# 处理预期结果
+def steps_to_result(steps):
+    steps_after=''
+    for step in steps:
+        num=step['num']
+        steps_after=steps_after+"步骤"+str(num)+"："+desc+"\n"
+    return steps_after
+
+def result_to_steps(steps):
+    result_after=''
+    for step in steps:
+        num=step['num']
+        result=step['result']
+        result_after=result_after+"步骤"+str(num)+"预期结果："+result+"\n"
+    return result_after
+
+# 处理步骤
+steps_len=[]
+def domysql():
+    sql_host=""
+    sql_user=""
+    sql_password=""
+
+    db = pymysql.connect(host=sql_host,
+                                    port=3306,
+                                    user=sql_user,
+                                    password=sql_password,
+                                    database='metersphere',
+                                    charset='utf8')
+    cursor=db.cursor()
+    sql="select node_path,name,priority,prerequisite,steps from test_case WHERE project_id IN ('111') and steps not like '%参考用例%'"
+
+    # 执行sql语句
+    cursor.execute(sql)
+    # 获取所有记录列表
+    results = cursor.fetchall()
+    for item in results:
+        node_path = item[0]
+        name = item[1]
+        priority = item[2]
+        prerequisite = item[3]
+        steps = item[4]
+        # print(node_path,name,priority,prerequisite,steps)
+        steps=eval(steps)      
+        # print(steps_len)
+        # 转成字符串
+        # steps=to_steps_str(list)
+        # 转成列表
+        # steps=to_steps_list(list)
+        # 把预期和步骤分开
+        # steps_after=steps_to_result(steps)
+        # result_after=steps_to_result(steps)
+        # 输出结果看看
+        # print("node_path："+node_path+"name："+name+"priority："+priority+"prerequisite："+prerequisite+"steps："+steps)
+        # 预期和结果不分开
+        # 预期和结果分开
+        if filter_path(node_path):
+            # 没有用例步骤的占一行
+            if len(steps)==0:
+                steps_len.append(1)
+            else:
+                steps_len.append(len(steps))
+            # print(name,len(steps))
+            for step in steps:
+                extracted_data.append({
+                    'node_path': node_path,
+                    'name': name,
+                    'priority': priority,
+                    'prerequisite': prerequisite,
+                    'num': step['num'],
+                    'desc': step['desc'],
+                    'result':step['result'],
+                    'steps_len': len(steps)
+                })
+        # print(extracted_data)
+        # 预期和结果分开
+        # if filter_path(node_path):
+        #     for step in steps:
+        #         extracted_data.append({
+        #             'node_path': node_path,
+        #             'name': name,
+        #             'priority': priority,
+        #             'prerequisite': prerequisite,
+        #             'steps':steps_after,
+        #             'result': result_after
+        #         })
+    db.close()
+
+def to_excel():
+    # 将数据写入到 Excel 文件
+    domysql()
+    output_file_path ='sheet5.xlsx'
+    df = pd.DataFrame(extracted_data)
+    df.to_excel(output_file_path, index=False)
+
+def to_csv():
+    domysql()
+    output_file_path = 'sheet3.csv'
+    with open(output_file_path, mode='w', newline='', encoding='utf-8') as csvfile:
+        # 定义字段名
+        fieldnames = ['node_path', 'name', 'priority','prerequisite','steps','result']
+
+        # 创建 csv.DictWriter 对象
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        # 写入列头
+        writer.writeheader()  
+        # 写入数据
+        writer.writerows(extracted_data)
+
+# domysql()
+# 过滤 
+filter_word='车辆管理'
+def filter_path(node_path):
+    # 如果node_path包含车辆管理字符串，返回True，否则返回False
+    if (node_path.find('管理')!= -1 and (node_path.find('管理')!= -1 or node_path.find('测试')!= -1 or node_path.find('')!= -1 or node_path.find('据')!= -1 ) ):
+        return True
+    else:
+        return False
+
+# 合并单元格
+
+def merge_same_content_cells(file_path,steps_len):
+    # 打开一个新的工作簿
+    wb = openpyxl.load_workbook(file_path)
+    ws = wb.active
+    # 要合并的单元格范围
+    # 例如：合并A1:C3范围内的单元格
+    i=2
+    j=2
+    for j in steps_len:
+        # if (j!=1):
+        print(j)
+        j=i+j-1
+        print(i,j)
+        range_string_A = 'A'+str(i)+':'+'A'+str(j)
+        range_string_B = 'B'+str(i)+':'+'B'+str(j)
+        range_string_C = 'C'+str(i)+':'+'C'+str(j)
+        range_string_D = 'D'+str(i)+':'+'D'+str(j)
+
+        print(range_string_A,range_string_B,range_string_C)
+        # 合并单元格
+        ws.merge_cells(range_string_A)
+        ws.merge_cells(range_string_B)
+        ws.merge_cells(range_string_C)   
+        ws.merge_cells(range_string_D)     
+# 保存工作簿
+        i=j+1
+        # else:
+        #     i=i+1
+    wb.save('merged_cells.xlsx')
+    
+def fiter_name():
+    pass
+
+# step1-将数据写进文档里，可写至excel，csv等格式
+to_excel()
+# to_csv()
+
+# 检查数据是否准确
+# domysql()
+
+# step2-将文档合并单元格，需要执行domysql获取合并单元格的列表
+# domysql()
+# print(steps_len)
+file_path = 'sheet5.xlsx'
+merge_same_content_cells(file_path,steps_len)
